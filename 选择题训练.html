@@ -771,7 +771,7 @@
             "options": [
                 { "text": "A、*(p++)==a++", "value": "A" },
                 { "text": "B、&*p==&a", "value": "B" },
-                { "text": "C、*(p)++==a++", "value": "C" },
+                { "text": "C、(*p)++==a++", "value": "C" },
                 { "text": "D、*&a==a", "value": "D" }
             ],
             "answer": "A",
@@ -1007,7 +1007,7 @@
         },
         {
             "id": 39,
-            "content": " 若有定义 int a [10],p=a;, 则 p+5 表示 ",
+            "content": " 若有定义 int a [10],*p=a;, 则 p+5 表示 ",
             "options": [
                 { "text": "A、元素 a [5] 的地址", "value": "A" },
                 { "text": "B、元素 a [6] 的地址", "value": "B" },
@@ -1132,7 +1132,7 @@
                 { "text": "A、n=*q;", "value": "A" },
                 { "text": "B、p=q;", "value": "B" },
                 { "text": "C、p=n;", "value": "C" },
-                { "text": "D、p=q;", "value": "D" }
+                { "text": "D、*p=*q;", "value": "D" }
             ],
             "answer": "C",
             "explanation": "p 是 int* 类型，n 是 int 类型，不能将 int 值直接赋给指针变量，类型不匹配，非法"
@@ -1415,7 +1415,7 @@
         },
         {
             "id": 73,
-            "content": "以下程序的运行结果是 main (){ int a=2, b= -1, c=2 ; if (a<b) if (b<0) c=0; else c+=1; printf(\"%d\\n\", c );}",
+            "content": "以下程序的运行结果是 main (){ int a=2, b= -1, c=2 ;if(a< b) if(b< 0) c=0; else c+=1; printf(\"%d\\n\", c );}",
             "options": [
                 { "text": "A、0", "value": "A" },
                 { "text": "B、2", "value": "B" },
