@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>C语言选择题训练系统</title>
+    <title>C语言选择题训练系统 - 即时反馈版</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -295,7 +295,6 @@
             padding: 20px;
             border-radius: 10px;
             font-weight: bold;
-            display: none;
             animation: fadeIn 0.5s ease;
             font-size: 18px;
         }
@@ -318,9 +317,9 @@
             background: rgba(75, 108, 183, 0.2);
             border-radius: 8px;
             border-left: 4px solid #4b6cb7;
-            display: none;
             color: #e0e0ff;
             line-height: 1.6;
+            display: none; 
         }
 
         .wrong-questions-container {
@@ -395,6 +394,39 @@
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
         }
 
+        /* 新增标记按钮样式 */
+        .mark-btn {
+            background: transparent;
+            border: none;
+            color: #aaa;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 15px;
+        }
+        
+        .mark-btn.marked {
+            color: #ff416c;
+        }
+        
+        .mark-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        .feedback-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+        
+        .feedback-content {
+            flex: 1;
+        }
+
         /* 动画定义 */
         @keyframes float {
             0%, 100% { transform: translateY(0) translateX(0); }
@@ -454,6 +486,16 @@
             .option-btn {
                 padding: 12px;
             }
+            
+            .feedback-container {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .mark-btn {
+                margin-top: 15px;
+                align-self: flex-start;
+            }
         }
 
         @media (max-width: 480px) {
@@ -488,7 +530,7 @@
     <div class="container">
         <header>
             <h1>C语言选择题训练系统</h1>
-            <div class="subtitle">巩固基础 · 强化理解 · 提升应试能力</div>
+            <div class="subtitle">即时反馈 · 错题标记 · 高效学习</div>
         </header>
         
         <div class="mode-selector">
@@ -514,8 +556,8 @@
                 <div class="stat-label">正确题</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number" id="wrong">0</div>
-                <div class="stat-label">错误题</div>
+                <div class="stat-number" id="marked">0</div>
+                <div class="stat-label">标记题</div>
             </div>
         </div>
         
@@ -533,9 +575,6 @@
         </div>
         
         <div class="actions">
-            <button class="action-btn" id="check-answers">
-                <i class="fas fa-check-circle"></i> 检查答案
-            </button>
             <button class="action-btn" id="reset-btn">
                 <i class="fas fa-sync-alt"></i> 重置练习
             </button>
@@ -543,13 +582,13 @@
     </div>
     
     <footer>
-        C语言编程训练系统 &copy; 2023 | 专为编程学习者设计
+        C语言编程训练系统 &copy; 2023 | 即时反馈版
     </footer>
 
     <script>
-        // 选择题数据（示例，可扩展）
+        // 选择题数据（示例）
         const questions = [
-             {
+            {
             "id": 1,
             "content": "已定义 ch 为字符型变量，以下赋值语句中错误的是（）。",
             "options": [
@@ -1606,8 +1645,9 @@
 }
         ];
 
-         let userAnswers = {};
-        let wrongQuestions = [];
+        // 用户状态
+        let userAnswers = {};
+        let markedQuestions = {}; // 存储标记的题目
         let currentMode = 'practice';
 
         // 初始化页面
@@ -1631,11 +1671,6 @@
                 renderWrongQuestions();
             });
             
-            // 检查答案按钮
-            document.getElementById('check-answers').addEventListener('click', function() {
-                checkAnswers();
-            });
-            
             // 重置按钮
             document.getElementById('reset-btn').addEventListener('click', function() {
                 resetPractice();
@@ -1648,12 +1683,13 @@
             container.innerHTML = '';
             
             questions.forEach(q => {
+                const isMarked = markedQuestions[q.id] || false;
+                
                 const questionEl = document.createElement('div');
                 questionEl.className = 'question';
                 questionEl.innerHTML = `
                     <div class="question-header">
                         <div class="question-number">${q.id}</div>
-                        <div class="question-status" id="status-${q.id}"></div>
                     </div>
                     <div class="question-content">
                         ${q.content}
@@ -1667,70 +1703,93 @@
                             </li>
                         `).join('')}
                     </ul>
-                    <div id="feedback-${q.id}" class="feedback"></div>
+                    <div class="feedback-container">
+                        <div id="feedback-${q.id}" class="feedback-content"></div>
+                        <button class="mark-btn ${isMarked ? 'marked' : ''}" id="mark-btn-${q.id}" data-id="${q.id}">
+                            <i class="fas fa-flag"></i> ${isMarked ? '已标记' : '标记为错题'}
+                        </button>
+                    </div>
                     <div id="explanation-${q.id}" class="explanation">
                         ${q.explanation}
                     </div>
                 `;
                 container.appendChild(questionEl);
-            });
-            
-            // 添加答题事件
-            document.querySelectorAll('.option-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const questionId = this.getAttribute('data-id');
-                    const answer = this.getAttribute('data-value');
-                    
-                    // 记录用户答案
-                    userAnswers[questionId] = answer;
-                    
-                    // 清除其他按钮的选择状态
-                    document.querySelectorAll(`.option-btn[data-id="${questionId}"]`).forEach(btn => {
-                        btn.classList.remove('selected');
+                
+                // 添加答题事件
+                document.querySelectorAll(`.option-btn[data-id="${q.id}"]`).forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const questionId = this.getAttribute('data-id');
+                        const answer = this.getAttribute('data-value');
+                        
+                        // 记录用户答案
+                        userAnswers[questionId] = answer;
+                        
+                        // 清除其他按钮的选择状态
+                        document.querySelectorAll(`.option-btn[data-id="${questionId}"]`).forEach(b => {
+                            b.classList.remove('selected');
+                        });
+                        
+                        // 设置当前选择的按钮
+                        this.classList.add('selected');
+                        
+                        // 立即显示反馈
+                        showImmediateFeedback(questionId);
+                        
+                        // 更新统计
+                        updateStats();
                     });
-                    
-                    // 设置当前选择的按钮
-                    this.classList.add('selected');
-                    
-                    // 隐藏反馈（直到检查答案）
-                    document.getElementById(`feedback-${questionId}`).style.display = 'none';
-                    document.getElementById(`explanation-${questionId}`).style.display = 'none';
-                    
-                    // 更新统计
-                    updateStats();
+                });
+                
+                // 添加标记按钮事件
+                const markBtn = document.getElementById(`mark-btn-${q.id}`);
+                markBtn.addEventListener('click', function() {
+                    const questionId = this.getAttribute('data-id');
+                    toggleMarkQuestion(questionId);
                 });
             });
         }
         
-        // 检查答案
-        function checkAnswers() {
-            wrongQuestions = [];
+        // 显示即时反馈
+        function showImmediateFeedback(questionId) {
+            const question = questions.find(q => q.id == questionId);
+            const userAnswer = userAnswers[questionId];
+            const feedbackEl = document.getElementById(`feedback-${questionId}`);
+            const explanationEl = document.getElementById(`explanation-${questionId}`);
             
-            questions.forEach(q => {
-                const userAnswer = userAnswers[q.id];
-                const feedbackEl = document.getElementById(`feedback-${q.id}`);
+            if (userAnswer) {
+                // 显示反馈和解释
+                feedbackEl.style.display = 'block';
+                explanationEl.style.display = 'block';
                 
-                if (userAnswer) {
-                    feedbackEl.style.display = 'block';
-                    document.getElementById(`explanation-${q.id}`).style.display = 'block';
+                if (userAnswer === question.answer) {
+                    feedbackEl.className = 'feedback correct-feedback';
+                    feedbackEl.innerHTML = `<i class="fas fa-check-circle"></i> 回答正确！标准答案：${question.answer}`;
+                } else {
+                    feedbackEl.className = 'feedback incorrect-feedback';
+                    feedbackEl.innerHTML = `<i class="fas fa-times-circle"></i> 回答错误！标准答案：${question.answer}`;
                     
-                    if (userAnswer === q.answer) {
-                        feedbackEl.className = 'feedback correct-feedback';
-                        feedbackEl.innerHTML = `<i class="fas fa-check-circle"></i> 回答正确！标准答案：${q.answer}`;
-                    } else {
-                        feedbackEl.className = 'feedback incorrect-feedback';
-                        feedbackEl.innerHTML = `<i class="fas fa-times-circle"></i> 回答错误！标准答案：${q.answer}`;
-                        
-                        // 添加到错题集
-                        if (!wrongQuestions.some(wq => wq.id === q.id)) {
-                            wrongQuestions.push(q);
-                        }
+                    // 自动标记答错的题目
+                    if (!markedQuestions[questionId]) {
+                        toggleMarkQuestion(questionId);
                     }
                 }
-            });
+            }
+        }
+        
+        // 切换题目标记状态
+        function toggleMarkQuestion(questionId) {
+            markedQuestions[questionId] = !markedQuestions[questionId];
             
-            // 更新错题数量
-            document.getElementById('wrong').textContent = wrongQuestions.length;
+            const markBtn = document.getElementById(`mark-btn-${questionId}`);
+            if (markedQuestions[questionId]) {
+                markBtn.classList.add('marked');
+                markBtn.innerHTML = `<i class="fas fa-flag"></i> 已标记`;
+            } else {
+                markBtn.classList.remove('marked');
+                markBtn.innerHTML = `<i class="fas fa-flag"></i> 标记为错题`;
+            }
+            
+            // 更新统计
             updateStats();
         }
         
@@ -1738,14 +1797,21 @@
         function renderWrongQuestions() {
             const container = document.getElementById('wrong-questions-list');
             
-            if (wrongQuestions.length === 0) {
-                container.innerHTML = '<div class="no-wrong-questions"><i class="fas fa-check-circle"></i> 恭喜！当前没有错题</div>';
+            // 获取标记的题目ID
+            const markedIds = Object.keys(markedQuestions).filter(id => markedQuestions[id]);
+            
+            if (markedIds.length === 0) {
+                container.innerHTML = '<div class="no-wrong-questions"><i class="fas fa-check-circle"></i> 恭喜！当前没有标记的错题</div>';
                 return;
             }
             
             container.innerHTML = '';
             
-            wrongQuestions.forEach(q => {
+            // 按ID排序标记的题目
+            const sortedIds = markedIds.map(id => parseInt(id)).sort((a, b) => a - b);
+            
+            sortedIds.forEach(id => {
+                const q = questions.find(question => question.id == id);
                 const questionEl = document.createElement('div');
                 questionEl.className = 'question';
                 questionEl.innerHTML = `
@@ -1764,8 +1830,11 @@
                             </li>
                         `).join('')}
                     </ul>
-                    <div id="feedback-${q.id}" class="feedback">
-                        <strong>正确答案:</strong> ${q.answer}
+                    <div class="feedback-container">
+                        <div id="feedback-${q.id}" class="feedback-content"></div>
+                        <button class="mark-btn marked" id="mark-btn-${q.id}" data-id="${q.id}">
+                            <i class="fas fa-flag"></i> 已标记
+                        </button>
                     </div>
                     <div id="explanation-${q.id}" class="explanation">
                         ${q.explanation}
@@ -1774,8 +1843,14 @@
                 container.appendChild(questionEl);
                 
                 // 显示正确答案和解析
-                document.getElementById(`feedback-${q.id}`).style.display = 'block';
-                document.getElementById(`explanation-${q.id}`).style.display = 'block';
+                const feedbackEl = document.getElementById(`feedback-${q.id}`);
+                feedbackEl.className = 'feedback incorrect-feedback';
+                feedbackEl.innerHTML = `<i class="fas fa-info-circle"></i> 正确答案：${q.answer}`;
+                feedbackEl.style.display = 'block';
+                
+                // 显示解析（错题回顾模式始终显示解析）
+                const explanationEl = document.getElementById(`explanation-${q.id}`);
+                explanationEl.style.display = 'block';
                 
                 // 添加答题事件
                 document.querySelectorAll(`.option-btn[data-id="${q.id}"]`).forEach(btn => {
@@ -1785,24 +1860,25 @@
                         // 更新用户答案
                         userAnswers[q.id] = answer;
                         
-                        // 更新UI
+                        // 清除其他按钮的选择状态
                         document.querySelectorAll(`.option-btn[data-id="${q.id}"]`).forEach(b => {
                             b.classList.remove('selected');
                         });
+                        
+                        // 设置当前选择的按钮
                         this.classList.add('selected');
                         
-                        // 检查答案
-                        if (answer === q.answer) {
-                            // 从错题集中移除
-                            wrongQuestions = wrongQuestions.filter(wq => wq.id !== q.id);
-                            
-                            // 重新渲染错题列表
-                            renderWrongQuestions();
-                            
-                            // 更新统计
-                            updateStats();
-                        }
+                        // 显示即时反馈
+                        showImmediateFeedback(q.id);
                     });
+                });
+                
+                // 添加标记按钮事件
+                const markBtn = document.getElementById(`mark-btn-${q.id}`);
+                markBtn.addEventListener('click', function() {
+                    toggleMarkQuestion(q.id);
+                    // 重新渲染错题列表
+                    renderWrongQuestions();
                 });
             });
         }
@@ -1822,12 +1898,13 @@
                 }
             });
             
-            const wrong = answered - correct;
+            // 统计标记的题目数量
+            const marked = Object.keys(markedQuestions).filter(id => markedQuestions[id]).length;
             
             document.getElementById('total-questions').textContent = total;
             document.getElementById('answered').textContent = answered;
             document.getElementById('correct').textContent = correct;
-            document.getElementById('wrong').textContent = wrong;
+            document.getElementById('marked').textContent = marked;
             
             // 更新进度条
             const progress = (answered / total) * 100;
@@ -1849,13 +1926,15 @@
         
         // 重置练习
         function resetPractice() {
-            userAnswers = {};
-            wrongQuestions = [];
-            renderQuestions();
-            updateStats();
-            
-            if (currentMode === 'review') {
-                document.getElementById('practice-mode').click();
+            if (confirm('确定要重置所有答题记录和标记吗？')) {
+                userAnswers = {};
+                markedQuestions = {};
+                renderQuestions();
+                updateStats();
+                
+                if (currentMode === 'review') {
+                    document.getElementById('practice-mode').click();
+                }
             }
         }
     </script>
