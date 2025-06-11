@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C语言判断题模拟考试系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #fff;
+            background: linear-gradient(135deg, #1a2980, #26d0ce);
+            padding: 20px;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .main-content-wrapper {
+            display: flex;
+            gap: 20px;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+        
+        .questions-wrapper {
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* ! 右侧独立导航窗口 - 使用sticky定位 */
+        .question-navigation {
+            position: sticky;
+            top: 20px;
+            width: 300px;
+            max-width: 300px;
+            height: calc(100vh - 40px);
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            z-index: 20;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .bg-elements {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        
+        .circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+        
+        .circle:nth-child(1) {
+            width: 200px;
+            height: 200px;
+            top: 10%;
+            left: 5%;
+            animation: float 15s infinite ease-in-out;
+        }
+        
+        .circle:nth-child(2) {
+            width: 150px;
+            height: 150px;
+            bottom: 15%;
+            right: 10%;
+            animation: float 12s infinite ease-in-out reverse;
+        }
+        
+        .circle:nth-child(3) {
+            width: 100px;
+            height: 100px;
+            top: 40%;
+            right: 20%;
+            animation: float 10s infinite ease-in-out;
+        }
+        
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 24px;
+            padding: 40px 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+            z-index: 10;
+        }
+        
+        .container::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #ff8a00, #e52e71, #4a00e0);
+            animation: border-animation 3s infinite linear;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+        
+        h1 {
+            color: white;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .timer-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .navigation-title {
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #ffcc00;
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .question-numbers {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        
+        .question-number-tag {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            border: 2px solid transparent;
+        }
+        
+        .question-number-tag.answered {
+            background: rgba(86, 171, 47, 0.6);
+            border-color: #56ab2f;
+        }
+        
+        .question-number-tag.current {
+            border-color: #ffcc00;
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+        }
+        
+        .question-number-tag:hover {
+            transform: scale(1.1);
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .mode-selector {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        
+        .mode-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background: linear-gradient(to right, #4b6cb7, #182848);
+            color: white;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+        
+        .mode-btn::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(255,255,255,0.2) 0%, transparent 50%, rgba(255,255,255,0.2) 100%);
+            z-index: -1;
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+        
+        .mode-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .mode-btn:hover::before {
+            transform: translateX(100%);
+        }
+        
+        .mode-btn.active {
+            background: linear-gradient(to right, #ff7e5f, #feb47b);
+            transform: scale(1.05);
+        }
+        
+        .stats-container {
+            display: flex;
+            justify-content: space-around;
+            background: linear-gradient(to right, #4b6cb7, #182848);
+            color: white;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-card {
+            text-align: center;
+            padding: 10px;
+        }
+        
+        .stat-number {
+            font-size: 2.2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .stat-label {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+        
+        .progress-container {
+            height: 12px;
+            background: #e0e0e0;
+            border-radius: 6px;
+            margin: 20px 0;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #ff7e5f, #feb47b);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        .question {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .question-number {
+            background: linear-gradient(to right, #4b6cb7, #182848);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 20px;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+        }
+        
+        .question-content {
+            font-size: 18px;
+            margin-bottom: 25px;
+            line-height: 1.7;
+            color: #fff;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 10px;
+            border-left: 5px solid #4b6cb7;
+        }
+        
+        .answer-options {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .answer-btn {
+            flex: 1;
+            min-width: 120px;
+            padding: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .correct-btn {
+            background: rgba(86, 171, 47, 0.3);
+            border-color: #56ab2f;
+        }
+        
+        .incorrect-btn {
+            background: rgba(255, 65, 108, 0.3);
+            border-color: #ff416c;
+        }
+        
+        .answer-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .answer-btn.selected {
+            transform: scale(1.05);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+        }
+        
+        .feedback {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            display: none;
+            animation: fadeIn 0.5s ease;
+            font-size: 18px;
+        }
+        
+        .correct-feedback {
+            background: rgba(76, 175, 80, 0.2);
+            color: #e8f5e9;
+            border-left: 5px solid #4caf50;
+        }
+        
+        .incorrect-feedback {
+            background: rgba(244, 67, 54, 0.2);
+            color: #ffebee;
+            border-left: 5px solid #f44336;
+        }
+        
+        .explanation {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(75, 108, 183, 0.2);
+            border-radius: 8px;
+            border-left: 4px solid #4b6cb7;
+            display: none;
+            color: #e0e0ff;
+            line-height: 1.6;
+        }
+        
+        .wrong-questions-container {
+            display: none;
+            margin-top: 20px;
+        }
+        
+        .no-wrong-questions {
+            text-align: center;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 18px;
+        }
+        
+        .actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .action-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background: linear-gradient(to right, #4b6cb7, #182848);
+            color: white;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+        
+        .action-btn::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(255,255,255,0.2) 0%, transparent 50%, rgba(255,255,255,0.2) 100%);
+            z-index: -1;
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .action-btn:hover::before {
+            transform: translateX(100%);
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            color: rgba(255, 255, 255, 0.7);
+            padding: 20px;
+            font-size: 16px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); }
+            25% { transform: translateY(-20px) translateX(10px); }
+            50% { transform: translateY(10px) translateX(-15px); }
+            75% { transform: translateY(-15px) translateX(-10px); }
+        }
+        
+        @keyframes border-animation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* ! 响应式设计调整 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                max-width: 100%;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
+            
+            .timer-container {
+                position: static;
+                margin-top: 15px;
+                display: inline-flex;
+            }
+            
+            .main-content-wrapper {
+                flex-direction: column;
+            }
+            
+
+            /* ! 右侧独立导航窗口 - 修改为强制固定定位 */
+            .question-navigation {
+
+
+
+
+
+
+
+                position: fixed;        /* 强制固定定位 */
+                top: 20px;             /* 距离视口顶部20像素 */
+                right: 20px;
+                width: 300px;
+
+
+                height: calc(100vh - 60px); /* 高度为视口高度减60px */
+                margin-top: 20px;
+                max-height: none;
+            }
+            
+            .mode-selector {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .mode-btn {
+                width: 100%;
+            }
+            
+            .stats-container {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .question {
+                padding: 20px 15px;
+            }
+            
+            .question-content {
+                padding: 15px;
+                font-size: 16px;
+            }
+            
+            .answer-options {
+                flex-direction: column;
+            }
+            
+            .answer-btn {
+                width: 100%;
+            }
+        }
+        
+        /* 导航栏标题装饰 */
+        .nav-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .nav-icon {
+            font-size: 24px;
+            color: #ffcc00;
+        }
+        
+        /* 导航栏滚动提示 */
+        .scroll-hint {
+            text-align: center;
+            margin-top: 15px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-elements">
+        <div class="circle"></div>
+        <div class="circle"></div>
+        <div class="circle"></div>
+    </div>
+    
+    <div class="container">
+        <header>
+            <h1>C语言判断题模拟考试系统</h1>
+            <div class="subtitle">提升编程能力 · 巩固知识点 · 掌握考试要点</div>
+            <div class="timer-container">
+                <i class="fas fa-clock"></i>
+                <span id="timer">00:00</span>
+            </div>
+        </header>
+
+        <!-- ! 使用新的flex容器包裹内容 -->
+        <div class="main-content-wrapper">
+            <div class="questions-wrapper">
+                <div class="mode-selector">
+                    <button class="mode-btn active" id="practice-mode">
+                        <i class="fas fa-book"></i> 考试模式
+                    </button>
+                    <button class="mode-btn" id="review-mode">
+                        <i class="fas fa-redo"></i> 错题回顾
+                    </button>
+                </div>
+
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <div class="stat-number" id="total-questions">0</div>
+                        <div class="stat-label">总题数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="answered">0</div>
+                        <div class="stat-label">已答题</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="correct">0</div>
+                        <div class="stat-label">正确题</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="wrong">0</div>
+                        <div class="stat-label">错误题</div>
+                    </div>
+                </div>
+
+                <div class="progress-container">
+                    <div class="progress-bar" id="progress-bar"></div>
+                </div>
+
+                <div id="questions-container"></div>
+
+                <div class="wrong-questions-container" id="wrong-questions-container">
+                    <h2 style="text-align: center; margin-bottom: 20px; color: #ff7e5f;">
+                        <i class="fas fa-exclamation-circle"></i> 错题列表
+                    </h2>
+                    <div id="wrong-questions-list"></div>
+                </div>
+
+                <div class="actions">
+                    <button class="action-btn" id="check-answers">
+                        <i class="fas fa-check-circle"></i> 交卷评分
+                    </button>
+                    <button class="action-btn" id="reset-btn">
+                        <i class="fas fa-sync-alt"></i> 重置考试
+                    </button>
+                </div>
+            </div>
+
+            <!-- ! 右侧独立导航窗口 - 使用sticky定位 -->
+            <div class="question-navigation">
+                <div class="nav-header">
+                    <i class="fas fa-map-signs nav-icon"></i>
+                    <div class="navigation-title">题目导航</div>
+                </div>
+                <div class="question-numbers" id="question-numbers"></div>
+                <div class="scroll-hint">
+                    <i class="fas fa-arrow-down"></i> 滚动查看所有题目
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        C语言模拟考试系统 &copy; 2023 | 专为编程学习者设计
+    </footer>
+
+    <script>
+        // 判断题数据
+        const allQuestions = [{
+                id: 1,
+                content: "一个include 命令可以指定多个被包含的文件。",
+                answer: "错误",
+                explanation: "在C语言中，一个#include命令只能包含一个文件。"
+            },
+            {
+                id: 2,
+                content: "int i=20; switch(i/10){case 2:printf(\"A\"); case 1:printf(\"B\");} 的输出结果为A。",
+                answer: "错误",
+                explanation: "输出结果为AB，因为case 2执行后会继续执行case 1（缺少break语句）。"
+            },
+            {
+                id: 3,
+                content: "若有 int i=10, j=0; 则执行完语句 if (j=0) i++; else i--; i的值为11。",
+                answer: "错误",
+                explanation: "j=0是赋值操作，条件判断为假，执行i--，所以i的值为9。"
+            },
+            {
+                id: 4,
+                content: "循环结构中的continue语句是使整个循环终止执行。",
+                answer: "错误",
+                explanation: "continue语句只结束本次循环，而不是终止整个循环。"
+            },
+            {
+                id: 5,
+                content: "若有说明 int c; 则 while(c=getchar()); 是正确的C语句。",
+                answer: "正确",
+                explanation: "这是一个合法的while循环，读取字符直到遇到EOF。"
+            },
+            {
+                id: 6,
+                content: "C语言中只能逐个引用数组元素而不能一次引用整个数组。",
+                answer: "正确",
+                explanation: "C语言不支持直接操作整个数组，只能通过索引访问单个元素。"
+            },
+            {
+                id: 7,
+                content: "在C程序中, 函数既可以嵌套定义, 也可以嵌套调用。",
+                answer: "错误",
+                explanation: "C语言不允许函数嵌套定义（在函数内部定义另一个函数），但允许嵌套调用。"
+            },
+            {
+                id: 8,
+                content: "通过return语句，函数可以带回一个或一个以上的返回值。",
+                answer: "错误",
+                explanation: "return语句只能返回一个值。要返回多个值，需要使用指针或结构体。"
+            },
+            {
+                id: 9,
+                content: "结构体类型只有一种。",
+                answer: "错误",
+                explanation: "结构体类型可以有多种，程序员可以根据需要定义不同的结构体类型。"
+            },
+            {
+                id: 10,
+                content: "int i, *p=&i; 是正确的C说明。",
+                answer: "正确",
+                explanation: "这是一个合法的指针声明和初始化，p指向变量i。"
+            },
+            {
+                id: 11,
+                content: "函数strlen(\"ASDFG\\n\")的值是7。",
+                answer: "错误",
+                explanation: "strlen计算字符串长度不包含结束符'\\0'，但包含换行符'\\n'，所以长度是6。"
+            },
+            {
+                id: 12,
+                content: "C语言的switch语句中case后可为常量或表达式或有确定值的变量及表达式。",
+                answer: "错误",
+                explanation: "case后只能为整型常量或常量表达式，不能是变量或非常量表达式。"
+            },
+            {
+                id: 13,
+                content: "while和do...while循环不论什么条件下它们的结果都是相同的。",
+                answer: "错误",
+                explanation: "当循环条件初始为假时，while循环一次都不执行，而do...while至少执行一次。"
+            },
+            {
+                id: 14,
+                content: "char c[]=\"Very Good\"; 是一个合法的为字符串数组赋值的语句。",
+                answer: "正确",
+                explanation: "这是合法的字符数组初始化为字符串的方式。"
+            },
+            {
+                id: 15,
+                content: "函数调用语句: func(rec1,rec2+rec3,(rec4,rec5)); 中, 含有的实参个数是5。",
+                answer: "错误",
+                explanation: "实参个数是3：rec1, rec2+rec3, 以及逗号表达式(rec4,rec5)。"
+            },
+            {
+                id: 16,
+                content: "共同体变量所占的内存长度等于最长的成员的长度。",
+                answer: "正确",
+                explanation: "联合体（共同体）的大小由最大成员的大小决定。"
+            },
+            {
+                id: 17,
+                content: "有如下说明: int a[10]={1,2,3,4,5,6,7,8,9,10}, *p=a; 则数值为9的表达式是 *(p+8)。",
+                answer: "正确",
+                explanation: "数组索引从0开始，a[8]等于9，*(p+8)等价于a[8]。"
+            },
+            {
+                id: 18,
+                content: "在Turbo C中，整型数据在内存中占2个字节。",
+                answer: "正确",
+                explanation: "在Turbo C这种16位编译器中，int类型通常占2个字节。"
+            },
+            {
+                id: 19,
+                content: "C程序中有调用关系的所有函数必须放在同一个源程序文件中。",
+                answer: "错误",
+                explanation: "可以通过函数声明在不同文件中使用函数。"
+            },
+            {
+                id: 20,
+                content: "关系运算符 <= 与 == 的优先级相同。",
+                answer: "错误",
+                explanation: "关系运算符中，<, <=, >, >= 优先级高于 == 和 !=。"
+            },
+            {
+                id: 21,
+                content: "如果想使一个数组中全部元素的值为0，可以写成int a[10]={0*10};",
+                answer: "错误",
+                explanation: "此写法仅初始化第一个元素为0，其余元素默认0，但写法不规范（通常用{0}初始化全部）。"
+            },
+            {
+                id: 22,
+                content: "C语言所有函数都是外部函数。",
+                answer: "正确",
+                explanation: "C语言中函数默认具有extern属性，属于外部函数。"
+            },
+            {
+                id: 23,
+                content: "表达式 (j=3, j++) 的值是4。",
+                answer: "错误",
+                explanation: "逗号表达式值为最后一个表达式的值，j++是先使用后自增，值为3。"
+            },
+            {
+                id: 24,
+                content: "int a[3][4]={{1},{5},{9}}; 它的作用是将数组各行第一列的元素赋初值，其余元素值为0。",
+                answer: "正确",
+                explanation: "每行第一个元素被赋值，其余元素自动初始化为0。"
+            },
+            {
+                id: 25,
+                content: "如果被调用函数的定义出现在主调函数之前,可以不必加以声明。",
+                answer: "正确",
+                explanation: "函数定义在前时，编译器已知道函数原型，无需额外声明。"
+            },
+            {
+                id: 26,
+                content: "语句scanf(\"%7.2f\",&a);是一个合法的scanf函数。",
+                answer: "错误",
+                explanation: "scanf中%f不允许指定小数位数（该格式仅适用于字符串截取）。"
+            },
+            {
+                id: 27,
+                content: "设有数组定义: char array [ ]=\"hello\"; 则数组 array所占的空间为5。",
+                answer: "错误",
+                explanation: "字符串包含结束符\\0，数组实际占用6个字节。"
+            },
+            {
+                id: 28,
+                content: "变量根据其作用域的范围可以分作局部变量和全局变量。",
+                answer: "正确",
+                explanation: "变量作用域分为局部（函数内）和全局（函数外）两种。"
+            },
+            {
+                id: 29,
+                content: "C语言的函数可以嵌套定义。",
+                answer: "错误",
+                explanation: "C语言严禁在函数内部定义另一个函数（不支持嵌套定义）。"
+            },
+            {
+                id: 30,
+                content: "如果函数值的类型和return语句中表达式的值不一致，则以函数类型为准。",
+                answer: "正确",
+                explanation: "返回值会被强制转换为函数定义时指定的类型。"
+            },
+            {
+                id: 31,
+                content: "在程序中定义了一个结构体类型后，可以多次用它来定义具有该类型的变量。",
+                answer: "正确",
+                explanation: "结构体类型定义后可作为自定义类型多次使用。"
+            },
+            {
+                id: 32,
+                content: "若有 int i=10,j=2;则执行完i*=j+8;后i的值为28。",
+                answer: "错误",
+                explanation: "j+8=10，i*=10等价于i=i*10，结果为100。"
+            },
+            {
+                id: 33,
+                content: "若 a=3,b=2,c=1 则关系表达式\"(a>b)==c\" 的值为\"真\"。",
+                answer: "正确",
+                explanation: "a>b为真（值为1），与c=1相等，表达式值为真。"
+            },
+            {
+                id: 34,
+                content: "逻辑表达式-5&&!8的值为1。",
+                answer: "错误",
+                explanation: "-5为真（非0），!8为假（0），逻辑与结果为假（0）。"
+            },
+            {
+                id: 35,
+                content: "#define 和printf 都不是C语句。",
+                answer: "正确",
+                explanation: "#define是预处理指令，printf是函数调用（需加分号才是语句）。"
+            },
+            {
+                id: 36,
+                content: "若有定义和语句：int a[3][3]={{3,5},{8,9},{12,35}},i,sum=0;for(i=0;i<3;i++) sum+=a[i][2-i];则sum=21。",
+                answer: "正确",
+                explanation: "计算a[0][2]=0、a[1][1]=9、a[2][0]=12，总和为21。"
+            },
+            {
+                id: 37,
+                content: "字符处理函数strcpy(str1,str2)的功能是把字符串1接到字符串2的后面。",
+                answer: "错误",
+                explanation: "strcpy的功能是将字符串str2复制到str1（覆盖原内容）。"
+            },
+            {
+                id: 38,
+                content: "a=(b=4)+(c=6) 是一个合法的赋值表达式。",
+                answer: "正确",
+                explanation: "赋值表达式合法，先执行b=4和c=6，再将和赋给a。"
+            },
+            {
+                id: 39,
+                content: "假设有int a[10],  *p;则p=&a[0]与p=a等价。",
+                answer: "正确",
+                explanation: "数组名a等价于&a[0]，两种赋值方式均使p指向数组首元素。"
+            },
+            {
+                id: 40,
+                content: "语句 printf(\"%f%%\",1.0/3);输出为 0.333333。",
+                answer: "错误",
+                explanation: "输出应为0.333333%（%%会被解析为输出%符号）。"
+            },
+            {
+                id: 41,
+                content: "整数 -32100可以赋值给int型和long int型变量。",
+                answer: "正确",
+                explanation: "在16位int范围内（-32768~32767），-32100合法，long类型通常范围更大。"
+            },
+            {
+                id: 42,
+                content: "若有定义和语句：int a;char c;float f;scanf(\"%d,%c,%f\",&a,&c,&f); 若通过键盘输入：10,A,12.5,则a=10,c='A',f=12.5。",
+                answer: "正确",
+                explanation: "输入格式与scanf格式控制符匹配，可正确赋值。"
+            },
+            {
+                id: 43,
+                content: "若有宏定义：#define S(a,b) t=a;a=b;b=t由于变量t没定义，所以此宏定义是错误的。",
+                answer: "错误",
+                explanation: "宏定义本身语法正确，但使用时因t未定义会导致编译错误（宏定义不检查变量声明）。"
+            },
+            {
+                id: 44,
+                content: "x*=y+8 等价于 x=x*(y+8)。",
+                answer: "正确",
+                explanation: "复合赋值运算符x*=expr等价于x=x*expr。"
+            },
+            {
+                id: 45,
+                content: "两个字符串中的字符个数相同时才能进行字符串大小的比较。",
+                answer: "错误",
+                explanation: "字符串比较按ASCII码逐个字符进行，与长度无关。"
+            },
+            {
+                id: 46,
+                content: "十进制数15的二进制数是1111。",
+                answer: "正确",
+                explanation: "15的二进制表示为2^3+2^2+2^1+2^0=8+4+2+1=15。"
+            }];
+
+        // 用户状态
+        let userAnswers = {};
+        let wrongQuestions = [];
+        let currentMode = 'practice';
+        let questions = [];
+        let timerInterval;
+        let seconds = 0;
+        let currentQuestionId = 1;
+
+        // 随机选择15道题目
+        function getRandomQuestions() {
+            const shuffled = [...allQuestions].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, 15).map((q, index) => ({
+                ...q,
+                id: index + 1
+            }));
+        }
+
+        // 开始计时器
+        function startTimer() {
+            clearInterval(timerInterval);
+            seconds = 0;
+            timerInterval = setInterval(() => {
+                seconds++;
+                updateTimer();
+            }, 1000);
+        }
+
+        // 更新计时器显示
+        function updateTimer() {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            document.getElementById('timer').textContent = 
+                `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+        }
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            resetExam();
+            
+            // 模式切换事件
+            document.getElementById('practice-mode').addEventListener('click', function() {
+                currentMode = 'practice';
+                updateModeUI();
+                document.getElementById('questions-container').style.display = 'block';
+                document.getElementById('wrong-questions-container').style.display = 'none';
+            });
+            
+            document.getElementById('review-mode').addEventListener('click', function() {
+                currentMode = 'review';
+                updateModeUI();
+                document.getElementById('questions-container').style.display = 'none';
+                document.getElementById('wrong-questions-container').style.display = 'block';
+                renderWrongQuestions();
+            });
+            
+            // 检查答案按钮
+            document.getElementById('check-answers').addEventListener('click', function() {
+                checkAnswers();
+            });
+            
+            // 重置按钮
+            document.getElementById('reset-btn').addEventListener('click', function() {
+                resetExam();
+            });
+            
+            // 显示滚动提示
+            if (window.innerWidth > 768) {
+                document.querySelector('.scroll-hint').style.display = 'block';
+            }
+        });
+
+        // 渲染题目
+        function renderQuestions() {
+            const container = document.getElementById('questions-container');
+            container.innerHTML = '';
+            
+            questions.forEach(q => {
+                const questionEl = document.createElement('div');
+                questionEl.className = 'question';
+                questionEl.id = `question-${q.id}`;
+                questionEl.innerHTML = `
+                    <div class="question-header">
+                        <div class="question-number">${q.id}</div>
+                        <div class="question-status" id="status-${q.id}"></div>
+                    </div>
+                    <div class="question-content">
+                        ${q.content}
+                    </div>
+                    <div class="answer-options">
+                        <button class="answer-btn correct-btn" data-id="${q.id}" data-answer="正确">
+                            <i class="fas fa-check"></i> 正确
+                        </button>
+                        <button class="answer-btn incorrect-btn" data-id="${q.id}" data-answer="错误">
+                            <i class="fas fa-times"></i> 错误
+                        </button>
+                    </div>
+                    <div id="feedback-${q.id}" class="feedback"></div>
+                    <div id="explanation-${q.id}" class="explanation">
+                        ${q.explanation}
+                    </div>
+                `;
+                container.appendChild(questionEl);
+            });
+            
+            // 添加答题事件
+            document.querySelectorAll('.answer-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const questionId = this.getAttribute('data-id');
+                    const answer = this.getAttribute('data-answer');
+                    
+                    // 记录用户答案
+                    userAnswers[questionId] = answer;
+                    
+                    // 更新UI
+                    updateAnswerUI(questionId, answer);
+                    
+                    // 更新统计
+                    updateStats();
+                    
+                    // 更新导航栏
+                    updateQuestionNavigation();
+                });
+            });
+        }
+        
+        // 更新题号导航栏
+        function updateQuestionNavigation() {
+            const numbersContainer = document.getElementById('question-numbers');
+            numbersContainer.innerHTML = '';
+            
+            questions.forEach(q => {
+                const numberTag = document.createElement('div');
+                numberTag.className = 'question-number-tag';
+                numberTag.textContent = q.id;
+                
+                if (userAnswers[q.id]) {
+                    numberTag.classList.add('answered');
+                }
+                
+                if (parseInt(q.id) === currentQuestionId) {
+                    numberTag.classList.add('current');
+                }
+                
+                numberTag.addEventListener('click', () => {
+                    scrollToQuestion(q.id);
+                    currentQuestionId = q.id;
+                    updateQuestionNavigation();
+                });
+                
+                numbersContainer.appendChild(numberTag);
+            });
+        }
+        
+        // 滚动到指定题目
+        function scrollToQuestion(questionId) {
+            const questionEl = document.getElementById(`question-${questionId}`);
+            if (questionEl) {
+                questionEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                // 添加高亮效果
+                questionEl.style.animation = 'none';
+                setTimeout(() => {
+                    questionEl.style.animation = 'highlight 1.5s';
+                }, 10);
+            }
+        }
+        
+        // 更新答题UI
+        function updateAnswerUI(questionId, userAnswer) {
+            document.querySelectorAll(`.answer-btn[data-id="${questionId}"]`).forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            document.querySelector(`.answer-btn[data-id="${questionId}"][data-answer="${userAnswer}"]`).classList.add('selected');
+            
+            document.getElementById(`feedback-${questionId}`).style.display = 'none';
+            document.getElementById(`explanation-${questionId}`).style.display = 'none';
+        }
+        
+        // 检查答案
+        function checkAnswers() {
+            wrongQuestions = [];
+            
+            questions.forEach(q => {
+                const userAnswer = userAnswers[q.id];
+                const feedbackEl = document.getElementById(`feedback-${q.id}`);
+                
+                if (userAnswer) {
+                    feedbackEl.style.display = 'block';
+                    document.getElementById(`explanation-${q.id}`).style.display = 'block';
+                    
+                    if (userAnswer === q.answer) {
+                        feedbackEl.className = 'feedback correct-feedback';
+                        feedbackEl.innerHTML = `<i class="fas fa-check-circle"></i> 回答正确！标准答案：${q.answer}`;
+                    } else {
+                        feedbackEl.className = 'feedback incorrect-feedback';
+                        feedbackEl.innerHTML = `<i class="fas fa-times-circle"></i> 回答错误！标准答案：${q.answer}`;
+                        
+                        if (!wrongQuestions.some(wq => wq.id === q.id)) {
+                            wrongQuestions.push(q);
+                        }
+                    }
+                }
+            });
+            
+            document.getElementById('wrong').textContent = wrongQuestions.length;
+            updateStats();
+            
+            clearInterval(timerInterval);
+            
+            const answered = Object.keys(userAnswers).length;
+            const total = questions.length;
+            const score = Math.round((answered - wrongQuestions.length) / total * 100);
+            
+            if (answered === total) {
+                alert(`考试完成！\n得分: ${score}分\n用时: ${document.getElementById('timer').textContent}`);
+            } else {
+                alert(`考试完成！\n已答: ${answered}/${total}题\n得分: ${score}分\n用时: ${document.getElementById('timer').textContent}`);
+            }
+        }
+        
+        // 渲染错题
+        function renderWrongQuestions() {
+            const container = document.getElementById('wrong-questions-list');
+            
+            if (wrongQuestions.length === 0) {
+                container.innerHTML = '<div class="no-wrong-questions"><i class="fas fa-check-circle"></i> 恭喜！当前没有错题</div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            wrongQuestions.forEach(q => {
+                const questionEl = document.createElement('div');
+                questionEl.className = 'question';
+                questionEl.innerHTML = `
+                    <div class="question-header">
+                        <div class="question-number">${q.id}</div>
+                    </div>
+                    <div class="question-content">
+                        ${q.content}
+                    </div>
+                    <div class="answer-options">
+                        <button class="answer-btn correct-btn" data-id="${q.id}" data-answer="正确">
+                            <i class="fas fa-check"></i> 正确
+                        </button>
+                        <button class="answer-btn incorrect-btn" data-id="${q.id}" data-answer="错误">
+                            <i class="fas fa-times"></i> 错误
+                        </button>
+                    </div>
+                    <div id="feedback-${q.id}" class="feedback">
+                        <strong>正确答案:</strong> ${q.answer}
+                    </div>
+                    <div id="explanation-${q.id}" class="explanation">
+                        ${q.explanation}
+                    </div>
+                `;
+                container.appendChild(questionEl);
+                
+                document.getElementById(`feedback-${q.id}`).style.display = 'block';
+                document.getElementById(`explanation-${q.id}`).style.display = 'block';
+                
+                document.querySelectorAll(`.answer-btn[data-id="${q.id}"]`).forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const answer = this.getAttribute('data-answer');
+                        
+                        userAnswers[q.id] = answer;
+                        
+                        document.querySelectorAll(`.answer-btn[data-id="${q.id}"]`).forEach(b => {
+                            b.classList.remove('selected');
+                        });
+                        this.classList.add('selected');
+                        
+                        if (answer === q.answer) {
+                            wrongQuestions = wrongQuestions.filter(wq => wq.id !== q.id);
+                            renderWrongQuestions();
+                            updateStats();
+                        }
+                    });
+                });
+            });
+        }
+        
+        // 更新统计信息
+        function updateStats() {
+            const total = questions.length;
+            let answered = 0;
+            let correct = 0;
+            
+            questions.forEach(q => {
+                if (userAnswers[q.id]) {
+                    answered++;
+                    if (userAnswers[q.id] === q.answer) {
+                        correct++;
+                    }
+                }
+            });
+            
+            const wrong = answered - correct;
+            
+            document.getElementById('total-questions').textContent = total;
+            document.getElementById('answered').textContent = answered;
+            document.getElementById('correct').textContent = correct;
+            document.getElementById('wrong').textContent = wrong;
+            
+            const progress = (answered / total) * 100;
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+        }
+        
+        // 更新模式UI
+        function updateModeUI() {
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            if (currentMode === 'practice') {
+                document.getElementById('practice-mode').classList.add('active');
+            } else {
+                document.getElementById('review-mode').classList.add('active');
+            }
+        }
+        
+        // 重置考试
+        function resetExam() {
+            userAnswers = {};
+            wrongQuestions = [];
+            
+            questions = getRandomQuestions();
+            
+            renderQuestions();
+            
+            updateStats();
+            
+            updateQuestionNavigation();
+            
+            startTimer();
+            
+            if (currentMode === 'review') {
+                document.getElementById('practice-mode').click();
+            }
+            
+            window.scrollTo(0, 0);
+        }
+
+        // 添加高亮动画
+        const style = document.createElement('style');
+        style.innerHTML = `
+        @keyframes highlight {
+                0% { box-shadow: 0 0 0 0 rgba(255, 204, 0, 0.7); }
+                70% { box-shadow: 0 0 0 10px rgba(255, 204, 0, 0); }
+                100% { box-shadow: 0 0 0 0 rgba(255, 204, 0, 0); }
+            }
+            .question {
+                animation: none;
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
